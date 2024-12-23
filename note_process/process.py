@@ -1,112 +1,5 @@
-from typing import List, Optional
-from pydantic import BaseModel
-from openai import OpenAI
-import json
-import pickle
-import textwrap
-
-client = OpenAI()
-
-
-class Input(BaseModel):
-    vocabulary: str
-    guide: str
-    subtitle_japanese: str
-    subtitle_english: str
-    audio: str
-
-
-class Extracted(BaseModel):
-    sentence_japanese: str
-    sentence_english: str
-
-
-class Furigana(BaseModel):
-    furigana: str
-
-
-class Triplet(BaseModel):
-    prefix: str
-    middle: str
-    suffix: str
-
-
-class Output(BaseModel):
-    sentence_japanese: Triplet
-    sentence_furigana: Triplet
-    sentence_english: Triplet
-
-
-# class InOut(BaseModel):
-#    input: Input
-#    output: Output
-
-model = "gpt-4o"
-
-dump_inout = True
-
-# examples: List[InOut] = [
-#    InOut(
-#        input=Input(
-#            vocabulary="遭遇",
-#            guide="遭遇しただけでした！",
-#            subtitle_japanese="‎たぶん ジブンの見間違えっす<br>‎ただのエロい おばあちゃんに<br>‎遭遇しただけでした！<br>‎‎そこのヤツには<br>‎絶対 抜かれちゃダメだって",
-#            subtitle_english="I'm pretty sure I misunderstood something.<br>I simply bumped into a lewd granny!<br>They say you can't let her<br>outrun you at any cost!"
-#        ),
-#        output=Output.model_validate({
-#            "sentence_japanese": "ただのエロいおばあちゃんに遭遇しただけでした！",
-#            "sentence_english": "I simply bumped into a lewd granny!"
-#        })
-#    ),
-#    InOut(
-#        input=Input(
-#            vocabulary="幽霊",
-#            guide="幽霊は信じてる派だから",
-#            subtitle_japanese="‎宇宙人は信じてないけど<br>‎幽霊は信じてる派だから<br>‎いや 幽霊なんて<br>‎いるわけないでしょ",
-#            subtitle_english="I don't believe in aliens.<br>But I do believe in ghosts.<br>Oh no, there's no such thing as ghosts."
-#        ),
-#        output=Output.model_validate({
-#            "sentence_japanese": "幽霊は信じてる派だから。",
-#            "sentence_english": "But I do believe in ghosts."
-#        })
-#    ),
-#    InOut(
-#        input=Input(
-#            vocabulary="勘違い",
-#            guide="‎なんか勘違いしてねえか",
-#            subtitle_japanese="‎もう それしかありませんっ<br>‎なんか 勘違いしてねえか<br>‎別にあんたと<br>‎仲よくしたいとかないから",
-#            subtitle_english="Maybe you got the wrong idea?<br>It's not like I wanna get<br>chummy with you or anything."
-#        ),
-#        output=Output.model_validate({
-#            "sentence_japanese": "なんか勘違いしてねえか。",
-#            "sentence_english": "Maybe you got the wrong idea?"
-#        })
-#    ),
-#    InOut(
-#        input=Input(
-#            vocabulary="正式",
-#            guide="‎ＵＡＰの存在を正式に認め",
-#            subtitle_japanese="‎ねえ ウザいんだけど<br>‎アメリカ軍は<br>‎ＵＡＰの存在を正式に認め<br>‎“宇宙軍”を再編成しました",
-#            subtitle_english="Hey, you're being a pest.<br>The U.S. military has officially<br>acknowledged the existence of UAPs<br>and reformed the Space Force!"
-#        ),
-#        output=Output.model_validate({
-#            "sentence_japanese": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。",
-#            "sentence_english": "The U.S. military has officially acknowledged the existence of UAPs and reformed the Space Force."
-#        })
-#    )
-# ]
-
-
-def dedent(string):
-    return textwrap.dedent(string).strip()
-
-
-def dump_dict(data):
-    return json.dumps(data, ensure_ascii=False)
-
-
-def fmt_dict(data):
-    return json.dumps(data, indent=4, ensure_ascii=False)
+from common import *
+from audio import *
 
 
 def extract_sentences(input: Input) -> Extracted:
@@ -125,8 +18,10 @@ def extract_sentences(input: Input) -> Extracted:
         -- add punctuation if not already present
 
         examples: [
-            {"input": {"vocabulary": "正式", "guide": "‎ＵＡＰの存在を正式に認め", "subtitle_japanese": "‎ねえ ウザいんだけど<br>‎アメリカ軍は<br>‎ＵＡＰの存在を正式に認め<br>‎“宇宙軍”を再編成しました", "subtitle_english": "Hey, you're being a pest.<br>The U.S. military has officially<br>acknowledged the existence of UAPs<br>and reformed the Space Force!"}, "output": {"sentence_japanese": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。", "sentence_english": "The U.S. military has officially acknowledged the existence of UAPs and reformed the Space Force!"}}
-            {"input": {"vocabulary": "遭遇", "guide": "遭遇しただけでした！", "subtitle_japanese": "‎たぶん ジブンの見間違えっす<br>‎ただのエロい おばあちゃんに<br>‎遭遇しただけでした！<br>‎‎そこのヤツには<br>‎絶対 抜かれちゃダメだって", "subtitle_english": "I'm pretty sure I misunderstood something.<br>I simply bumped into a lewd granny!<br>They say you can't let her<br>outrun you at any cost!"}, "output": {"sentence_japanese": "ただのエロいおばあちゃんに遭遇しただけでした！", "sentence_english": "I simply bumped into a lewd granny!"}}
+            {"input": {"vocabulary": "正式", "guide": "‎ＵＡＰの存在を正式に認め", "subtitle_japanese": "‎ねえ ウザいんだけど<br>‎アメリカ軍は<br>‎ＵＡＰの存在を正式に認め<br>‎“宇宙軍”を再編成しました", "subtitle_english": "Hey, you're being a pest.<br>The U.S. military has officially<br>acknowledged the existence of UAPs<br>and reformed the Space Force!"},
+                "output": {"sentence_japanese": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。", "sentence_english": "The U.S. military has officially acknowledged the existence of UAPs and reformed the Space Force!"}}
+            {"input": {"vocabulary": "遭遇", "guide": "遭遇しただけでした！", "subtitle_japanese": "‎たぶん ジブンの見間違えっす<br>‎ただのエロい おばあちゃんに<br>‎遭遇しただけでした！<br>‎‎そこのヤツには<br>‎絶対 抜かれちゃダメだって", "subtitle_english":
+                "I'm pretty sure I misunderstood something.<br>I simply bumped into a lewd granny!<br>They say you can't let her<br>outrun you at any cost!"}, "output": {"sentence_japanese": "ただのエロいおばあちゃんに遭遇しただけでした！", "sentence_english": "I simply bumped into a lewd granny!"}}
         ]
     """)
 
@@ -162,7 +57,8 @@ def augment_furigana(sentence: str) -> str:
         identify words and add whitespace between words
 
         examples: [
-            {"input": {"sentence": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。"}, "output": {"furigana": "<ruby>アメリカ<rt>あめりか</rt></ruby> <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を <ruby>正式<rt>せいしき</rt></ruby> に <ruby>認<rt>みと</rt></ruby>め “ <ruby>宇宙軍<rt>うちゅうぐん</rt></ruby> ” を <ruby>再編成<rt>さいへんせい</rt></ruby> しました 。"}}
+            {"input": {"sentence": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。"}, "output": {
+                "furigana": "<ruby>アメリカ<rt>あめりか</rt></ruby> <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を <ruby>正式<rt>せいしき</rt></ruby> に <ruby>認<rt>みと</rt></ruby>め “ <ruby>宇宙軍<rt>うちゅうぐん</rt></ruby> ” を <ruby>再編成<rt>さいへんせい</rt></ruby> しました 。"}}
         ]
     """)
 
@@ -196,10 +92,14 @@ def split_sentence(vocabulary: str, sentence: str) -> Triplet:
         - preserve whitespace
 
         examples: [
-            {"input": {"vocabulary": "正式", "sentence": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。"}, "output": {"prefix": "アメリカ軍はＵＡＰの存在を", "middle": "正式", "suffix": "に認め“宇宙軍”を再編成しました。"}},
-            {"input": {"vocabulary": "正式", "sentence": "The U.S. military has officially acknowledged the existence of UAPs and reformed the Space Force."}, "output": {"prefix": "The U.S. military has ", "middle": "officially", "suffix": " acknowledged the existence of UAPs and reformed the Space Force."}},
-            {"input": {"vocabulary": "正式", "sentence": "アメリカ <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を <ruby>正式<rt>せいしき</rt></ruby> に <ruby>認<rt>みと</rt></ruby>め “<ruby>宇宙<rt>うちゅう</rt></ruby> 軍<rt>ぐん</rt>” を <ruby>再編成<rt>さいへんせい</rt></ruby>しました。"}, "output": {"prefix": "アメリカ <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を ", "middle": "<ruby>正式<rt>せいしき</rt></ruby>", "suffix": " に <ruby>認<rt>みと</rt></ruby>め “<ruby>宇宙<rt>うちゅう</rt></ruby> 軍<rt>ぐん</rt>” を <ruby>再編成<rt>さいへんせい</rt></ruby>しました。"}},
-            {"input": {"vocabulary": "遭遇", "sentence": "I simply bumped into a lewd granny!"}, "output": {"prefix": "I simply ", "middle":"bumped into", "suffix":" a lewd granny!"}}
+            {"input": {"vocabulary": "正式", "sentence": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。"}, "output": {
+                "prefix": "アメリカ軍はＵＡＰの存在を", "middle": "正式", "suffix": "に認め“宇宙軍”を再編成しました。"}},
+            {"input": {"vocabulary": "正式", "sentence": "The U.S. military has officially acknowledged the existence of UAPs and reformed the Space Force."}, "output": {
+                "prefix": "The U.S. military has ", "middle": "officially", "suffix": " acknowledged the existence of UAPs and reformed the Space Force."}},
+            {"input": {"vocabulary": "正式", "sentence": "アメリカ <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を <ruby>正式<rt>せいしき</rt></ruby> に <ruby>認<rt>みと</rt></ruby>め “<ruby>宇宙<rt>うちゅう</rt></ruby> 軍<rt>ぐん</rt>” を <ruby>再編成<rt>さいへんせい</rt></ruby>しました。"},
+                "output": {"prefix": "アメリカ <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を ", "middle": "<ruby>正式<rt>せいしき</rt></ruby>", "suffix": " に <ruby>認<rt>みと</rt></ruby>め “<ruby>宇宙<rt>うちゅう</rt></ruby> 軍<rt>ぐん</rt>” を <ruby>再編成<rt>さいへんせい</rt></ruby>しました。"}},
+            {"input": {"vocabulary": "遭遇", "sentence": "I simply bumped into a lewd granny!"}, "output": {
+                "prefix": "I simply ", "middle":"bumped into", "suffix":" a lewd granny!"}}
         ]
     """)
 
@@ -238,10 +138,18 @@ def process(input: Input) -> Output:
     sentence_english_split = split_sentence(
         input.vocabulary, extracted.sentence_english)
 
+    audio = extract_relevant_audio(
+        extracted.sentence_japanese,
+        input.audio)
+
+    # sentence = "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。"
+    # sentence_audio = extract_relevant_audio(sentence, input.audio)
+
     return Output(
         sentence_japanese=sentence_japanese_split,
         sentence_furigana=sentence_furigana_split,
-        sentence_english=sentence_english_split
+        sentence_english=sentence_english_split,
+        sentence_audio=audio,
     )
 
 

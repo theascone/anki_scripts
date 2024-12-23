@@ -1,5 +1,7 @@
 import json
 import requests
+import base64
+import uuid
 from process import *
 
 ANKICONNECT_URL = "http://127.0.0.1:8765"
@@ -36,7 +38,7 @@ def fetch_audio_data(file_name):
     if audio_data is None:
         raise ValueError(f"Audio file {file_name} not found.")
 
-    return bytearray(audio_data, "utf-8")
+    return bytearray(base64.b64decode(audio_data))
 
 
 def extract_audio_filename(audio_field):
@@ -69,12 +71,26 @@ def merge_triplet(triplet):
     return f"{triplet.prefix}<span class=\"expression-highlight\">{triplet.middle}</span>{triplet.suffix}"
 
 
+def upload_audio_to_anki(audio_data):
+    """Upload audio file to Anki's media collection with a random file name."""
+    file_name = f"sentence_audio_{uuid.uuid4().hex}.mp3"
+    response = invoke("storeMediaFile", filename=file_name,
+                      data=base64.b64encode(audio_data).decode("utf-8"))
+    if response.get("error") is not None:
+        raise ValueError(f"AnkiConnect error uploading audio: {
+                         response['error']}")
+    return file_name
+
+
 def update_note_fields(note_id, results):
     """Update the output fields in the note with the processed results."""
+    audio_file_name = upload_audio_to_anki(results.sentence_audio)
+
     fields_to_update = {
         "Sentence Japanese": merge_triplet(results.sentence_japanese),
         "Sentence Furigana": merge_triplet(results.sentence_furigana),
-        "Sentence English": merge_triplet(results.sentence_english)
+        "Sentence English": merge_triplet(results.sentence_english),
+        "Sentence Audio": f"[sound:{audio_file_name}]"
     }
 
     response = invoke("updateNoteFields", note={
@@ -87,20 +103,13 @@ def update_note_fields(note_id, results):
                          response['error']}")
 
 
-test_result = {"sentence_japanese": {"prefix": "アメリカ軍はＵＡＰの存在を", "middle": "正式", "suffix": "に認め“宇宙軍”を再編成しました。"}, "sentence_furigana": {"prefix": "<ruby>アメリカ<rt>あめりか</rt></ruby> <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を ", "middle": "<ruby>正式<rt>せいしき</rt></ruby>",
-                                                                                                                                      "suffix": " に <ruby>認<rt>みと</rt></ruby>め “ <ruby>宇宙軍<rt>うちゅうぐん</rt></ruby> ” を <ruby>再編成<rt>さいへんせい</rt></ruby> しました 。"}, "sentence_english": {"prefix": "The U.S. military has ", "middle": "officially", "suffix": " acknowledged the existence of UAPs and reformed the Space Force!"}}
-
-
 def main(note_id):
     """Main function to retrieve the note, prepare input, process it, and update fields."""
     try:
-        # note = get_note(note_id)
-        # input_structure = prepare_input(note)
-        # result = process(input_structure)
-        # print(dump_dict(result.model_dump()))
-        result = Output.model_validate(test_result)
+        note = get_note(note_id)
+        input_structure = prepare_input(note)
+        result = process(input_structure)
         update_note_fields(note_id, result)
-
         print("Processing and updating completed successfully.")
     except Exception as e:
         print(f"Error: {e}")
