@@ -2,6 +2,11 @@ from common import *
 from audio import *
 
 
+class Extracted(BaseModel):
+    sentence_japanese: str
+    sentence_english: str
+
+
 def extract_sentences(input: Input) -> Extracted:
     system_content = dedent("""
         extract japanese and english sentences from given subtitles
@@ -51,6 +56,9 @@ def extract_sentences(input: Input) -> Extracted:
 
 
 def augment_furigana(sentence: str) -> str:
+    class Response(BaseModel):
+        furigana: str
+
     system_content = dedent("""
         augment given sentence with furigana using html ruby tags,
         identify words and add whitespace between words
@@ -68,7 +76,7 @@ def augment_furigana(sentence: str) -> str:
             {"role": "system", "content": system_content},
             {"role": "user", "content": dump_data(user_content)}
         ],
-        response_format=Furigana
+        response_format=Response
     )
 
     response = completion.choices[0].message.parsed
@@ -78,7 +86,7 @@ def augment_furigana(sentence: str) -> str:
         print()
         print(fmt_data(out))
 
-    return response
+    return response.furigana
 
 
 class SplitIn(BaseModel):
@@ -132,27 +140,25 @@ def split_sentences(input: [SplitIn]) -> [Triplet]:
 def process(input: Input) -> Output:
     extracted = extract_sentences(input)
 
-    sentence_furigana = augment_furigana(extracted.sentence_japanese)
+    sentence_japanese = extracted.sentence_japanese
+    sentence_furigana = augment_furigana(sentence_japanese)
+    sentence_english = extracted.sentence_english
 
     split_in = [
-        SplitIn(vocabulary=input.vocabulary,
-                sentence=extracted.sentence_japanese),
-        SplitIn(vocabulary=input.vocabulary,
-                sentence=sentence_furigana.furigana),
-        SplitIn(vocabulary=input.vocabulary,
-                sentence=extracted.sentence_english),
+        SplitIn(vocabulary=input.vocabulary, sentence=sentence_japanese),
+        SplitIn(vocabulary=input.vocabulary, sentence=sentence_furigana),
+        SplitIn(vocabulary=input.vocabulary, sentence=sentence_english),
     ]
     split_out = split_sentences(split_in)
-    [sentence_japanese_split, sentence_furigana_split,
-        sentence_english_split] = split_out
+    [sentence_japanese, sentence_furigana, sentence_english] = split_out
 
     audio = extract_relevant_audio(
         extracted.sentence_japanese,
         input.audio)
 
     return Output(
-        sentence_japanese=sentence_japanese_split,
-        sentence_furigana=sentence_furigana_split,
-        sentence_english=sentence_english_split,
+        sentence_japanese=sentence_japanese,
+        sentence_furigana=sentence_furigana,
+        sentence_english=sentence_english,
         sentence_audio=audio,
     )

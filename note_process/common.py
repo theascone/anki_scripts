@@ -18,24 +18,10 @@ class Input(BaseModel):
     audio: bytes
 
 
-class Extracted(BaseModel):
-    sentence_japanese: str
-    sentence_english: str
-
-
-class Furigana(BaseModel):
-    furigana: str
-
-
 class Triplet(BaseModel):
     prefix: str
     middle: str
     suffix: str
-
-
-class CutRange(BaseModel):
-    begin: float
-    end: float
 
 
 class Output(BaseModel):

@@ -5,10 +5,17 @@ import subprocess
 import tempfile
 
 
-def transcribe_audio(audio_path: str) -> dict:
+class CutRange(BaseModel):
+    begin: float
+    end: float
+
+
+def transcribe_audio(audio_path: str, sentence: str) -> dict:
+    print(sentence)
     """Transcribe audio using Whisper and return the transcription with timestamps."""
     with open(audio_path, "rb") as audio_file:
         transcription = client.audio.transcriptions.create(
+            prompt="sentence hint: {sentence}",
             file=audio_file,
             model="whisper-1",
             response_format="verbose_json",
@@ -29,7 +36,6 @@ def find_japanese_sentence(japanese_sentence: str, transcription: dict) -> CutRa
     system_content = dedent("""
         match the given japanese sentence against the provided transcription
         return range where japanese sentence begins and ends in transcription
-        pad start and end by up to 0.5 seconds
     """)
 
     user_content = dict(
@@ -60,9 +66,13 @@ def cut_audio(audio_path: str, cut_range: CutRange) -> bytearray:
     """Cut the audio file to the specified start and end times and return the resulting bytearray."""
     output_path = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False).name
 
+    # Ensure non-negative start time
+    padded_start = max(cut_range.begin - 0.5, 0)
+    padded_end = cut_range.end + 0.5
+
     command = [
         "ffmpeg", "-i", audio_path,
-        "-ss", str(cut_range.begin), "-to", str(cut_range.end),
+        "-ss", str(padded_start), "-to", str(padded_end),
         output_path, "-y"
     ]
 
@@ -78,7 +88,7 @@ def extract_relevant_audio(japanese_sentence: str, audio_bytes: bytearray) -> by
         temp_audio_file.write(audio_bytes)
         temp_audio_path = temp_audio_file.name
 
-        transcription = transcribe_audio(temp_audio_path)
+        transcription = transcribe_audio(temp_audio_path, japanese_sentence)
         cut_range = find_japanese_sentence(
             japanese_sentence, transcription)
         return cut_audio(temp_audio_path, cut_range)
