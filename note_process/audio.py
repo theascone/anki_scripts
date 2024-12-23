@@ -41,7 +41,7 @@ def find_japanese_sentence(japanese_sentence: str, transcription: dict) -> CutRa
         model=model,
         messages=[
             {"role": "system", "content": system_content},
-            {"role": "user", "content": dump_dict(user_content)}
+            {"role": "user", "content": dump_data(user_content)}
         ],
         response_format=CutRange
     )
@@ -51,7 +51,7 @@ def find_japanese_sentence(japanese_sentence: str, transcription: dict) -> CutRa
     if dump_inout:
         out = dict(input=user_content, output=response.model_dump())
         print()
-        print(fmt_dict(out))
+        print(fmt_data(out))
 
     return response
 

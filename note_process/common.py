@@ -2,6 +2,7 @@ import textwrap
 import json
 from openai import OpenAI
 from pydantic import BaseModel
+from typing import List
 
 model = "gpt-4o"
 dump_inout = True
@@ -48,9 +49,9 @@ def dedent(string):
     return textwrap.dedent(string).strip()
 
 
-def dump_dict(data):
+def dump_data(data):
     return json.dumps(data, ensure_ascii=False)
 
 
-def fmt_dict(data):
+def fmt_data(data):
     return json.dumps(data, indent=4, ensure_ascii=False)

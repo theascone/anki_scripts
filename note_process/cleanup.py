@@ -149,10 +149,7 @@ def main():
     args = parser.parse_args()
 
     if args.reprocess:
-        try:
-            process_note_by_id(args.reprocess)
-        except Exception as e:
-            print(f"Error reprocessing note {args.reprocess}: {e}")
+        process_note_by_id(args.reprocess)
     elif args.process_unprocessed:
         process_unprocessed_notes()
     else:
