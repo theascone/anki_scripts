@@ -8,7 +8,10 @@ class Extracted(BaseModel):
 
 
 def extract_sentences(input: Input) -> Extracted:
-    system_content = dedent("""
+    system_content = dedent(f"""
+
+
+
         extract japanese and english sentences from given subtitles
         - japanese sentence must
         -- contain the vocabulary
@@ -23,10 +26,7 @@ def extract_sentences(input: Input) -> Extracted:
         -- add punctuation if not already present
         -- use japanese quotes in japanese sentence
 
-        examples: [
-            {"input": {"vocabulary": "正式", "guide": "‎ＵＡＰの存在を正式に認め", "subtitle_japanese": "‎ねえ ウザいんだけど<br>‎アメリカ軍は<br>‎ＵＡＰの存在を正式に認め<br>‎“宇宙軍”を再編成しました", "subtitle_english": "Hey, you're being a pest.<br>The U.S. military has officially<br>acknowledged the existence of UAPs<br>and reformed the Space Force!"}, "output": {"sentence_japanese": "アメリカ軍はＵＡＰの存在を正式に認め「宇宙軍」を再編成しました。", "sentence_english": "The U.S. military has officially acknowledged the existence of UAPs and reformed the Space Force!"}}
-            {"input": {"vocabulary": "遭遇", "guide": "遭遇しただけでした！", "subtitle_japanese": "‎たぶん ジブンの見間違えっす<br>‎ただのエロい おばあちゃんに<br>‎遭遇しただけでした！<br>‎‎そこのヤツには<br>‎絶対 抜かれちゃダメだって", "subtitle_english": "I'm pretty sure I misunderstood something.<br>I simply bumped into a lewd granny!<br>They say you can't let her<br>outrun you at any cost!"}, "output": {"sentence_japanese": "ただのエロいおばあちゃんに遭遇しただけでした！", "sentence_english": "I simply bumped into a lewd granny!"}}
-        ]
+        examples: {dump_data(examples.extract_sentences)}
     """)
 
     user_content = dict(
@@ -59,13 +59,11 @@ def augment_furigana(sentence: str) -> str:
     class Response(BaseModel):
         furigana: str
 
-    system_content = dedent("""
+    system_content = dedent(f"""
         augment given sentence with furigana using html ruby tags,
         identify words and add whitespace between words
 
-        examples: [
-            {"input": {"sentence": "アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。"}, "output": {"furigana": "<ruby>アメリカ<rt>あめりか</rt></ruby> <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を <ruby>正式<rt>せいしき</rt></ruby> に <ruby>認<rt>みと</rt></ruby>め “ <ruby>宇宙軍<rt>うちゅうぐん</rt></ruby> ” を <ruby>再編成<rt>さいへんせい</rt></ruby> しました 。"}}
-        ]
+        examples: {dump_data(examples.augment_furigana)}
     """)
 
     user_content = dict(sentence=sentence)
@@ -98,17 +96,14 @@ def split_sentences(input: [SplitIn]) -> [Triplet]:
     class Response(BaseModel):
         split_sentences: List[Triplet]
 
-    system_content = dedent("""
+    system_content = dedent(f"""
         split each sentence into prefix, middle and suffix
         conditions:
         - sentence = prefix + middle + suffix
         - middle: expression in sentence equivalent to vocabulary
         - preserve whitespace
 
-        examples: [
-            {"input":[{"vocabulary":"正式","sentence":"アメリカ軍はＵＡＰの存在を正式に認め“宇宙軍”を再編成しました。"},{"vocabulary":"正式","sentence":"<ruby>アメリカ<rt>あめりか</rt></ruby> <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を <ruby>正式<rt>せいしき</rt></ruby> に <ruby>認<rt>みと</rt></ruby>め “ <ruby>宇宙軍<rt>うちゅうぐん</rt></ruby> ” を <ruby>再編成<rt>さいへんせい</rt></ruby> しました 。"},{"vocabulary":"正式","sentence":"The U.S. military has officially acknowledged the existence of UAPs and reformed the Space Force!"}],"output":{"split_sentences":[{"prefix":"アメリカ軍はＵＡＰの存在を","middle":"正式","suffix":"に認め“宇宙軍”を再編成しました。"},{"prefix":"<ruby>アメリカ<rt>あめりか</rt></ruby> <ruby>軍<rt>ぐん</rt></ruby> は ＵＡＰ の <ruby>存在<rt>そんざい</rt></ruby> を ","middle":"<ruby>正式<rt>せいしき</rt></ruby>","suffix":" に <ruby>認<rt>みと</rt></ruby>め “ <ruby>宇宙軍<rt>うちゅうぐん</rt></ruby> ” を <ruby>再編成<rt>さいへんせい</rt></ruby> しました 。"},{"prefix":"The U.S. military has ","middle":"officially","suffix":" acknowledged the existence of UAPs and reformed the Space Force!"}]}},
-            {"input":[{"vocabulary":"近寄る","sentence":"悪いもんが近寄って来れん。"},{"vocabulary":"近寄る","sentence":"<ruby>悪<rt>わる</rt></ruby>い もん が <ruby>近寄<rt>ちかよ</rt></ruby>って <ruby>来<rt>こ</rt></ruby>れん 。"},{"vocabulary":"近寄る","sentence":"Bad things can't get near you."}],"output":{"split_sentences":[{"prefix":"悪いもんが","middle":"近寄って","suffix":"来れん。"},{"prefix":"<ruby>悪<rt>わる</rt></ruby>い もん が ","middle":"<ruby>近寄<rt>ちかよ</rt></ruby>って","suffix":" <ruby>来<rt>こ</rt></ruby>れん 。"},{"prefix":"Bad things can't ","middle":"get near","suffix":" you."}]}}
-        ]
+        examples: {dump_data(examples.split_sentences)}
     """)
 
     user_content = [split_in.model_dump() for split_in in input]

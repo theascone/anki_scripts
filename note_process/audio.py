@@ -3,6 +3,7 @@ from common import *
 import openai
 import subprocess
 import tempfile
+import examples
 
 
 class CutRange(BaseModel):
@@ -33,9 +34,11 @@ def transcribe_audio(audio_path: str, sentence: str) -> dict:
 
 
 def find_japanese_sentence(japanese_sentence: str, transcription: dict) -> CutRange:
-    system_content = dedent("""
+    system_content = dedent(f"""
         match the given japanese sentence against the provided transcription
         return range where japanese sentence begins and ends in transcription
+
+        examples: {dump_data(examples.find_japanese_sentence)}
     """)
 
     user_content = dict(
@@ -44,7 +47,7 @@ def find_japanese_sentence(japanese_sentence: str, transcription: dict) -> CutRa
     )
 
     completion = client.beta.chat.completions.parse(
-        model=model,
+        model=model2,
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": dump_data(user_content)}

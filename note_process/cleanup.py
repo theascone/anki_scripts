@@ -4,6 +4,7 @@ import base64
 import uuid
 import argparse
 import traceback
+import examples
 from process import *
 
 ANKICONNECT_URL = "http://127.0.0.1:8765"

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import List
 
 model = "gpt-4o"
+model2 = "gpt-4o-mini"
 dump_inout = True
 
 client = OpenAI()
