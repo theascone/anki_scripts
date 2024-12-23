@@ -3,6 +3,7 @@ import requests
 import base64
 import uuid
 import argparse
+import traceback
 from process import *
 
 ANKICONNECT_URL = "http://127.0.0.1:8765"
@@ -120,23 +121,24 @@ def update_note_fields(note_id, results):
 
 
 def process_note_by_id(note_id):
-    """Process a single note by ID."""
-    note = get_note(note_id)
-    input_structure = prepare_input(note)
-    result = process(input_structure)
-    update_note_fields(note_id, result)
-    add_tag_to_note(note_id, "generated-0")
-    print(f"Note {note_id} processed and tagged successfully.")
+    try:
+        """Process a single note by ID."""
+        note = get_note(note_id)
+        input_structure = prepare_input(note)
+        result = process(input_structure)
+        update_note_fields(note_id, result)
+        add_tag_to_note(note_id, "generated-0")
+        print(f"Note {note_id} processed and tagged successfully.")
+    except Exception as e:
+        print(f"Error processing note {note_id}: {e}")
+        print(traceback.format_exc())
 
 
 def process_unprocessed_notes():
     """Process notes of type 'Mining' that do not have the 'generated-0' tag."""
     note_ids = get_note_ids_with_tag("generated-0")
     for note_id in note_ids:
-        try:
-            process_note_by_id(note_id)
-        except Exception as e:
-            print(f"Error processing note {note_id}: {e}")
+        process_note_by_id(note_id)
 
 
 def main():
