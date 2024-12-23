@@ -2,6 +2,7 @@ import json
 import requests
 import base64
 import uuid
+import argparse
 from process import *
 
 ANKICONNECT_URL = "http://127.0.0.1:8765"
@@ -13,6 +14,21 @@ def invoke(action, **params):
         ANKICONNECT_URL, json={"action": action,
                                "version": 6, "params": params}
     ).json()
+
+
+def get_note_ids_with_tag(tag):
+    """Retrieve note IDs for notes with a specific tag and of type 'Mining'."""
+    response = invoke("findNotes", query=f"-tag:{tag} note:Mining")
+    if response.get("error") is not None:
+        raise ValueError(f"AnkiConnect error: {response['error']}")
+    return response.get("result", [])
+
+
+def add_tag_to_note(note_id, tag):
+    """Add a tag to a note."""
+    response = invoke("addTags", notes=[note_id], tags=tag)
+    if response.get("error") is not None:
+        raise ValueError(f"AnkiConnect error adding tag: {response['error']}")
 
 
 def get_note(note_id):
@@ -103,18 +119,45 @@ def update_note_fields(note_id, results):
                          response['error']}")
 
 
-def main(note_id):
-    """Main function to retrieve the note, prepare input, process it, and update fields."""
-    try:
-        note = get_note(note_id)
-        input_structure = prepare_input(note)
-        result = process(input_structure)
-        update_note_fields(note_id, result)
-        print("Processing and updating completed successfully.")
-    except Exception as e:
-        print(f"Error: {e}")
+def process_note_by_id(note_id):
+    """Process a single note by ID."""
+    note = get_note(note_id)
+    input_structure = prepare_input(note)
+    result = process(input_structure)
+    update_note_fields(note_id, result)
+    add_tag_to_note(note_id, "generated-0")
+    print(f"Note {note_id} processed and tagged successfully.")
+
+
+def process_unprocessed_notes():
+    """Process notes of type 'Mining' that do not have the 'generated-0' tag."""
+    note_ids = get_note_ids_with_tag("generated-0")
+    for note_id in note_ids:
+        try:
+            process_note_by_id(note_id)
+        except Exception as e:
+            print(f"Error processing note {note_id}: {e}")
+
+
+def main():
+    """CLI for processing notes."""
+    parser = argparse.ArgumentParser(description="Process Anki notes.")
+    parser.add_argument("--reprocess", type=int,
+                        help="Reprocess a single note by its ID.")
+    parser.add_argument("--process-unprocessed", action="store_true",
+                        help="Process all unprocessed notes.")
+    args = parser.parse_args()
+
+    if args.reprocess:
+        try:
+            process_note_by_id(args.reprocess)
+        except Exception as e:
+            print(f"Error reprocessing note {args.reprocess}: {e}")
+    elif args.process_unprocessed:
+        process_unprocessed_notes()
+    else:
+        print("No valid arguments provided. Use --help for options.")
 
 
 if __name__ == "__main__":
-    # note_id = int(input("Enter the Note ID: "))
-    main(1734907310908)
+    main()

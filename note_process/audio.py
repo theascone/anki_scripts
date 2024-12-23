@@ -60,8 +60,6 @@ def cut_audio(audio_path: str, cut_range: CutRange) -> bytearray:
     """Cut the audio file to the specified start and end times and return the resulting bytearray."""
     output_path = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False).name
 
-    print(output_path)
-
     command = [
         "ffmpeg", "-i", audio_path,
         "-ss", str(cut_range.begin), "-to", str(cut_range.end),
@@ -77,13 +75,8 @@ def cut_audio(audio_path: str, cut_range: CutRange) -> bytearray:
 def extract_relevant_audio(japanese_sentence: str, audio_bytes: bytearray) -> bytearray:
     """Extract the relevant part of the audio containing the Japanese sentence."""
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_audio_file:
-        print("a")
-        print(type(audio_bytes))
         temp_audio_file.write(audio_bytes)
-        print("a")
         temp_audio_path = temp_audio_file.name
-
-        print(temp_audio_path)
 
         transcription = transcribe_audio(temp_audio_path)
         cut_range = find_japanese_sentence(
