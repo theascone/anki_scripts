@@ -33,7 +33,7 @@ class Output(BaseModel):
 
 
 def dedent(string):
-    return textwrap.dedent(string).strip()
+    return textwrap.dedent(string).strip() + "\n"
 
 
 def dump_data(data):
