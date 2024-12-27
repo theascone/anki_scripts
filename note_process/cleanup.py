@@ -73,7 +73,8 @@ def prepare_input(note):
     audio_data = fetch_audio_data(audio_file) if audio_file else bytearray()
 
     input_structure = Input(
-        vocabulary=note["fields"].get("Expression", {}).get("value", ""),
+        vocabulary=note["fields"].get(
+            "Raw Yomitan Expression", {}).get("value", ""),
         guide=note["fields"].get("Raw Yomitan Sentence", {}).get("value", ""),
         subtitle_japanese=note["fields"].get(
             "Raw Sentence Japanese", {}).get("value", ""),
