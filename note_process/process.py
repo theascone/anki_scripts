@@ -102,7 +102,7 @@ def augment_furigana(sentence: str) -> str:
     user_content = dict(sentence=sentence)
 
     completion = client.beta.chat.completions.parse(
-        model=model2,
+        model=model,
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": dump_data(user_content)}
@@ -150,7 +150,7 @@ def split_sentences(input: [SplitIn]) -> [Triplet]:
     user_content = [split_in.model_dump() for split_in in input]
 
     completion = client.beta.chat.completions.parse(
-        model=model2,
+        model=model,
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": dump_data(user_content)}
