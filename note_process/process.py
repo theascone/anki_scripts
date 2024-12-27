@@ -1,3 +1,4 @@
+import unicodedata
 from common import *
 from audio import *
 
@@ -7,11 +8,25 @@ class Extracted(BaseModel):
     sentence_english: str
 
 
+def normalize_string(s):
+    s = "".join(ch for ch in s if unicodedata.category(ch)[0] != "C")
+    s = s.replace('<br>', '\n')
+    return s
+
+
+def fmt_examples(examples):
+    out = ""
+    for example in examples:
+        out += dedent(f"""
+        **Input:** {dump_data(example["input"])}
+        **Output:** {dump_data(example["output"])}
+
+        """)
+    return out
+
+
 def extract_sentences(input: Input) -> Extracted:
     system_content = dedent(f"""
-
-
-
         extract japanese and english sentences from given subtitles
         - japanese sentence must
         -- contain the vocabulary
@@ -21,11 +36,10 @@ def extract_sentences(input: Input) -> Extracted:
         -- correspond to japanese sentence
         -- be based on english subtitle
         clean up sentences
-        -- remove newlines and control characters
-        -- normalize whitespace
         -- add punctuation if not already present
-        -- use japanese quotes in japanese sentence
-
+        -- remove newlines
+        -- normalize whitespace
+        -- use japanese quotation marks (「」) in japanese sentence
         examples: {dump_data(examples.extract_sentences)}
     """)
 
@@ -60,16 +74,35 @@ def augment_furigana(sentence: str) -> str:
         furigana: str
 
     system_content = dedent(f"""
-        augment given sentence with furigana using html ruby tags,
-        identify words and add whitespace between words
+        **Objective:**
+        Enhance the given Japanese sentence by:
+        1. Adding **furigana** annotations using HTML `<ruby>` tags to provide readings for kanji and complex words.
+        2. Inserting whitespace between words to clearly separate them for easier parsing and readability.
 
-        examples: {dump_data(examples.augment_furigana)}
-    """)
+        ---
+
+        **Detailed Requirements:**
+        1. **Furigana Annotation**:
+        - Identify kanji or complex words in the sentence.
+        - Annotate these words with furigana readings using the `<ruby>` and `<rt>` tags.
+        - Preserve the original sentence structure while adding the annotations.
+
+        2. **Word Separation**:
+        - Add whitespace between individual words to improve readability.
+        - Words include particles, verbs, nouns, and other grammatical components.
+
+        3. **Output Format**:
+        - The output should be a string with furigana annotations and whitespace separating words.
+
+        ---
+
+        **Examples**:
+    """) + fmt_examples(examples.augment_furigana)
 
     user_content = dict(sentence=sentence)
 
     completion = client.beta.chat.completions.parse(
-        model=model,
+        model=model2,
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": dump_data(user_content)}
@@ -97,19 +130,27 @@ def split_sentences(input: [SplitIn]) -> [Triplet]:
         split_sentences: List[Triplet]
 
     system_content = dedent(f"""
-        split each sentence into prefix, middle and suffix
-        conditions:
-        - sentence = prefix + middle + suffix
-        - middle: expression in sentence equivalent to vocabulary
-        - preserve whitespace
+        **Objective:**
+        Split each given sentence into three parts: prefix, middle, and suffix. The "middle" corresponds to a specified vocabulary term or its equivalent expression in the sentence. The "prefix" and "suffix" are the parts of the sentence before and after the "middle," respectively. The concatenation of "prefix," "middle," and "suffix" must exactly recreate the original sentence, including all whitespaces, punctuation, and formatting.
 
-        examples: {dump_data(examples.split_sentences)}
+        ---
+
+        **Detailed Requirements:**
+        1. Identify the **middle** as the expression in the sentence that corresponds to the specified "vocabulary."
+        2. Ensure the **prefix** consists of all content in the sentence before the "middle."
+        3. Ensure the **suffix** consists of all content in the sentence after the "middle."
+        4. Preserve all formatting, including whitespace, punctuation, and special annotations (e.g., `<ruby>` tags).
+
+        ---
+
+        **Examples:**
+        Examples: {dump_data(examples.split_sentences)}
     """)
 
     user_content = [split_in.model_dump() for split_in in input]
 
     completion = client.beta.chat.completions.parse(
-        model=model,
+        model=model2,
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": dump_data(user_content)}
@@ -134,6 +175,9 @@ def split_sentences(input: [SplitIn]) -> [Triplet]:
 
 
 def process(input: Input) -> Output:
+    input.guide = normalize_string(input.guide)
+    input.subtitle_japanese = normalize_string(input.subtitle_japanese)
+    input.subtitle_english = normalize_string(input.subtitle_english)
     extracted = extract_sentences(input)
 
     sentence_japanese = extracted.sentence_japanese

@@ -34,6 +34,18 @@ extract_sentences = [
             "sentence_japanese": "さて証明してやりましょうか幽霊なんかいないってことを！",
             "sentence_english": "Now, I'll go and prove it right now that there are no such things as ghosts!"
         }
+    },
+    {
+        "input": {
+            "vocabulary": "脳波",
+            "guide": "‎まさか脳波を刺激しすぎたせいで",
+            "subtitle_japanese": "なぜだ？<br>まさか脳波を刺激しすぎたせいで<br>女のヒトの“チャクラ”が<br>開いてしまったのか",
+            "subtitle_english": "なぜだ？<br>まさか脳波を刺激しすぎたせいで<br>女のヒトの“チャクラ”が<br>開いてしまったのか"
+        },
+        "output": {
+            "sentence_japanese": "まさか脳波を刺激しすぎたせいで女のヒトの“チャクラ”が開いてしまったのか。",
+            "sentence_english": "Could it be that overstimulating brainwaves caused a woman's \"chakra\" to open?"
+        }
     }
 ]
 
